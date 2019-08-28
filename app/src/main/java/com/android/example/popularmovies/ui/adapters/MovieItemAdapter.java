@@ -10,7 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.example.popularmovies.R;
-import com.android.example.popularmovies.data.MovieItem;
+import com.android.example.popularmovies.data.database.MovieEntry;
 import com.android.example.popularmovies.ui.Interfaces.IMovieClicked;
 import com.android.example.popularmovies.utilities.NetworkUtils;
 import com.squareup.picasso.Picasso;
@@ -22,11 +22,16 @@ import java.util.List;
  */
 
 public class MovieItemAdapter extends RecyclerView.Adapter<MovieItemAdapter.MovieItemViewHolder> {
-    private List<MovieItem> movieItems;
+    private List<MovieEntry> movieItems;
 
     private IMovieClicked iMovieClicked;
-    public MovieItemAdapter(List<MovieItem> movieItems,IMovieClicked iMovieClicked){
-        this.movieItems=movieItems;
+
+    public void setMovieItems(List<MovieEntry> movieItems) {
+        this.movieItems = movieItems;
+        notifyDataSetChanged();
+    }
+
+    public MovieItemAdapter(IMovieClicked iMovieClicked){
         this.iMovieClicked=iMovieClicked;
     }
 

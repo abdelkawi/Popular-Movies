@@ -3,7 +3,10 @@ package com.android.example.popularmovies.data;
 import java.util.List;
 import com.google.gson.annotations.SerializedName;
 
-public class ApiResponse{
+public class MovieReviewsApiResponse{
+
+	@SerializedName("id")
+	private int id;
 
 	@SerializedName("page")
 	private int page;
@@ -12,10 +15,18 @@ public class ApiResponse{
 	private int totalPages;
 
 	@SerializedName("results")
-	private List<MovieItem> results;
+	private List<ReviewItem> results;
 
 	@SerializedName("total_results")
 	private int totalResults;
+
+	public void setId(int id){
+		this.id = id;
+	}
+
+	public int getId(){
+		return id;
+	}
 
 	public void setPage(int page){
 		this.page = page;
@@ -33,11 +44,11 @@ public class ApiResponse{
 		return totalPages;
 	}
 
-	public void setResults(List<MovieItem> results){
+	public void setResults(List<ReviewItem> results){
 		this.results = results;
 	}
 
-	public List<MovieItem> getResults(){
+	public List<ReviewItem> getResults(){
 		return results;
 	}
 
@@ -52,8 +63,9 @@ public class ApiResponse{
 	@Override
  	public String toString(){
 		return 
-			"ApiResponse{" + 
-			"page = '" + page + '\'' + 
+			"MovieReviewsApiResponse{" + 
+			"id = '" + id + '\'' + 
+			",page = '" + page + '\'' + 
 			",total_pages = '" + totalPages + '\'' + 
 			",results = '" + results + '\'' + 
 			",total_results = '" + totalResults + '\'' + 

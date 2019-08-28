@@ -2,7 +2,6 @@ package com.android.example.popularmovies.ui.activity;
 
 
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -12,54 +11,78 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.example.popularmovies.R;
-import com.android.example.popularmovies.data.ApiResponse;
-import com.android.example.popularmovies.data.MovieItem;
+import com.android.example.popularmovies.data.database.AppDatabase;
+import com.android.example.popularmovies.data.database.MovieEntry;
 import com.android.example.popularmovies.ui.Interfaces.IMovieClicked;
 import com.android.example.popularmovies.ui.adapters.MovieItemAdapter;
 import com.android.example.popularmovies.utilities.NetworkUtils;
+import com.android.example.popularmovies.viewmodel.MoviesViewModel;
 import com.google.gson.Gson;
 
-import java.io.IOException;
-import java.net.URL;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, IMovieClicked {
-    final static String POPULAR_END_POINT = "popular";
-    final static String TOP_RATED_END_POINT = "top_rated";
-    final static int SORT_BY_POPULAR = 1;
-    final static int SORT_BY_RATE = 2;
-    static int sCurrentSortBy = SORT_BY_POPULAR;
+
+
+    static String sCurrentSortBy = NetworkUtils.POPULAR_END_POINT;
     private TextView mErrorMsgTv;
     private RecyclerView mResultRv;
     private Button mRetryButton;
     private ProgressBar mLoadingPb;
     final String CURRENT_LIST_POSITION = "list_pos";
+    private AppDatabase mdb;
+    private MovieItemAdapter mMovieItemAdapter;
+    private MoviesViewModel mainViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        setupView();
+        mRetryButton.setOnClickListener(this);
+
+    }
+
+    void setupView() {
         mErrorMsgTv = findViewById(R.id.tv_error_message_display);
         mResultRv = findViewById(R.id.rv_moives_list);
         mRetryButton = findViewById(R.id.retry_button);
         mResultRv.setLayoutManager(new GridLayoutManager(MainActivity.this, 2));
         mLoadingPb = findViewById(R.id.pb_loading_indicator);
+        mMovieItemAdapter = new MovieItemAdapter(this);
+        mResultRv.setAdapter(mMovieItemAdapter);
+        mainViewModel = ViewModelProviders.of(this).get(MoviesViewModel.class);
         showLoading();
-        loadData(sCurrentSortBy);
-        mRetryButton.setOnClickListener(this);
+        mdb = AppDatabase.getInstance(this);
+        if (sCurrentSortBy != NetworkUtils.FAVORITES)
+           mainViewModel.loadMovies(sCurrentSortBy);
+        else loadFavorites();
+        mainViewModel.getmMoivesList().observe(this, new Observer<List<MovieEntry>>() {
+            @Override
+            public void onChanged(List<MovieEntry> movieEntries) {
+                mMovieItemAdapter.setMovieItems(movieEntries);
+                showData();
+            }
+        });
     }
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         invalidateOptionsMenu();
-        if (sCurrentSortBy == SORT_BY_POPULAR) {
+        if (sCurrentSortBy .equals( NetworkUtils.POPULAR_END_POINT)) {
             menu.findItem(R.id.most_popular).setVisible(false);
         }
-        if (sCurrentSortBy == SORT_BY_RATE)
+        if (sCurrentSortBy .equals( NetworkUtils.TOP_RATED_END_POINT))
             menu.findItem(R.id.top_rated).setVisible(false);
+        if (sCurrentSortBy .equals( NetworkUtils.FAVORITES))
+            menu.findItem(R.id.my_fav).setVisible(false);
+
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -74,11 +97,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         int itemThatWasClickedId = item.getItemId();
         showLoading();
         if (itemThatWasClickedId == R.id.most_popular) {
-            sCurrentSortBy = SORT_BY_POPULAR;
-            loadData(sCurrentSortBy);
+            sCurrentSortBy = NetworkUtils.POPULAR_END_POINT;
+            mainViewModel.loadMovies(sCurrentSortBy);
         } else if (itemThatWasClickedId == R.id.top_rated) {
-            sCurrentSortBy = SORT_BY_RATE;
-            loadData(sCurrentSortBy);
+            sCurrentSortBy = NetworkUtils.TOP_RATED_END_POINT;
+            mainViewModel.loadMovies(sCurrentSortBy);
+        } else if (itemThatWasClickedId == R.id.my_fav) {
+            sCurrentSortBy = NetworkUtils.FAVORITES;
+            loadFavorites();
         }
         return true;
     }
@@ -87,45 +113,47 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.retry_button:
-                loadData(sCurrentSortBy);
+                if (sCurrentSortBy != NetworkUtils.FAVORITES)
+                    mainViewModel.loadMovies(sCurrentSortBy);
+                else loadFavorites();
                 break;
         }
     }
 
     @Override
-    public void onMovieClicked(MovieItem movieItem) {
-        Intent detailIntent = new Intent(this,MovieDetailsActivity.class);
+    public void onMovieClicked(MovieEntry movieItem) {
+        Intent detailIntent = new Intent(this, MovieDetailsActivity.class);
         Gson gson = new Gson();
-        String stringMovieObject =gson.toJson(movieItem, MovieItem.class);
-        detailIntent.putExtra("movieItem",stringMovieObject);
+        String stringMovieObject = gson.toJson(movieItem, MovieEntry.class);
+        detailIntent.putExtra("movieItem", stringMovieObject);
         startActivity(detailIntent);
     }
 
-    class GithubQueryTask extends AsyncTask<URL, Void, String> {
-        @Override
-        protected String doInBackground(URL... urls) {
-            String githubSearchResults = null;
-            try {
-                githubSearchResults = NetworkUtils.getResponseFromHttpUrl(urls[0]);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return githubSearchResults;
-        }
-
-        @Override
-        protected void onPostExecute(String s) {
-            super.onPostExecute(s);
-            Gson gson = new Gson();
-            ApiResponse apiResponse = gson.fromJson(s, ApiResponse.class);
-            if (apiResponse != null && apiResponse.getResults().size() > 0) {
-                mResultRv.setAdapter(new MovieItemAdapter(apiResponse.getResults(),MainActivity.this));
-                showData();
-            } else {
-                showError();
-            }
-        }
-    }
+//    class GithubQueryTask extends AsyncTask<URL, Void, String> {
+//        @Override
+//        protected String doInBackground(URL... urls) {
+//            String githubSearchResults = null;
+//            try {
+//                githubSearchResults = NetworkUtils.getResponseFromHttpUrl(urls[0]);
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//            return githubSearchResults;
+//        }
+//
+//        @Override
+//        protected void onPostExecute(String s) {
+//            super.onPostExecute(s);
+//            Gson gson = new Gson();
+//            MoviesApiResponse apiResponse = gson.fromJson(s, MoviesApiResponse.class);
+//            if (apiResponse != null && apiResponse.getResults().size() > 0) {
+//                mMovieItemAdapter.setMovieItems(apiResponse.getResults());
+//                showData();
+//            } else {
+//                showError();
+//            }
+//        }
+//    }
 
     void showData() {
         mLoadingPb.setVisibility(View.GONE);
@@ -148,14 +176,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mRetryButton.setVisibility(View.GONE);
     }
 
-    void loadData(int sortBy) {
-        URL githubSearchUrl = null;
-        if (sortBy == SORT_BY_POPULAR) {
-            githubSearchUrl = NetworkUtils.buildUrl(POPULAR_END_POINT);
-        } else {
-            githubSearchUrl = NetworkUtils.buildUrl(TOP_RATED_END_POINT);
-        }
-        new GithubQueryTask().execute(githubSearchUrl);
+//    void loadData(int sortBy) {
+//        URL githubSearchUrl = null;
+//        if (sortBy == SORT_BY_POPULAR) {
+//            githubSearchUrl = NetworkUtils.buildUrl(POPULAR_END_POINT);
+//        } else {
+//            githubSearchUrl = NetworkUtils.buildUrl(TOP_RATED_END_POINT);
+//        }
+//        new GithubQueryTask().execute(githubSearchUrl);
+//    }
+
+    void loadFavorites() {
+        showData();
+        mMovieItemAdapter.setMovieItems(mdb.taskDAO().loadMovies());
     }
 
     @Override
@@ -163,7 +196,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onSaveInstanceState(outState);
         outState.putParcelable(CURRENT_LIST_POSITION, mResultRv.getLayoutManager().onSaveInstanceState());
     }
-
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
