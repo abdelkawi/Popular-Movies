@@ -8,6 +8,7 @@ import androidx.lifecycle.LiveData;
 
 import com.android.example.popularmovies.data.MoviesRepository;
 import com.android.example.popularmovies.data.TrailerItem;
+import com.android.example.popularmovies.data.database.AppDatabase;
 import com.android.example.popularmovies.data.database.MovieEntry;
 import com.android.example.popularmovies.data.ReviewItem;
 
@@ -15,10 +16,12 @@ import java.util.List;
 
 public class MoviesViewModel extends AndroidViewModel {
     private MoviesRepository moviesRepository;
+    private AppDatabase mAppDatabase ;
 
     public MoviesViewModel(@NonNull Application application) {
         super(application);
         moviesRepository = new MoviesRepository();
+        mAppDatabase = AppDatabase.getInstance(application.getApplicationContext());
     }
 
     public void loadMovies(String sortBy) {
@@ -42,6 +45,9 @@ public class MoviesViewModel extends AndroidViewModel {
     }
     public LiveData<List<TrailerItem>> getMovieTrailers(){
         return moviesRepository.getMoviesTrailersLiveData();
+    }
+    public LiveData<List<MovieEntry>> getFavorites(){
+        return mAppDatabase.taskDAO().loadMovies();
     }
 
 }

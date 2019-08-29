@@ -38,7 +38,7 @@ public class NetworkUtils {
             "http://api.themoviedb.org/3/movie/";
     final public static String BASE_IMAGE_URL="http://image.tmdb.org/t/p/w780";
     //TODO add your api_key to test
-    public static final String API_KEY="";
+    public static final String API_KEY="b70de8a7e7d449bca9758c31b3a11ab5";
     public static final  String POPULAR_END_POINT = "popular";
     public static final String TOP_RATED_END_POINT = "top_rated";
     public static final String FAVORITES = "favorites";

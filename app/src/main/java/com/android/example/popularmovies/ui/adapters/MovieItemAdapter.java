@@ -15,6 +15,7 @@ import com.android.example.popularmovies.ui.Interfaces.IMovieClicked;
 import com.android.example.popularmovies.utilities.NetworkUtils;
 import com.squareup.picasso.Picasso;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -22,7 +23,7 @@ import java.util.List;
  */
 
 public class MovieItemAdapter extends RecyclerView.Adapter<MovieItemAdapter.MovieItemViewHolder> {
-    private List<MovieEntry> movieItems;
+    private List<MovieEntry> movieItems=new ArrayList<>();
 
     private IMovieClicked iMovieClicked;
 

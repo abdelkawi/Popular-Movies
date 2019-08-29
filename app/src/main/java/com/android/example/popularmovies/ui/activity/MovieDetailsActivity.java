@@ -88,7 +88,7 @@ public class MovieDetailsActivity extends AppCompatActivity implements View.OnCl
         Picasso.get().load(NetworkUtils.BASE_IMAGE_URL + mMovieItem.getPosterPath()).into(mPosterIv);
         mVoteAverage.setText(mMovieItem.getVoteAverage() + "/10");
         mTitleTv.setText(mMovieItem.getTitle());
-        mReleaseDate.setText(mMovieItem.getReleaseDate().substring(0, 4));
+        mReleaseDate.setText(mMovieItem.getReleaseDate());
         mPlotSynopsis.setText(mMovieItem.getOverview());
         checkIfFav();
         loadReviews();

@@ -14,4 +14,6 @@
     <string name="fav">Favorites</string>
     <string name="trailers">Trailers</string>
     <string name="user_reviews">Reviews</string>
+    <string name="empty_message">Your Favorites is Empty!</string>
+    <string name="load_movies">Explore Movies</string>
 </resources>

@@ -10,7 +10,9 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -36,7 +38,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button mRetryButton;
     private ProgressBar mLoadingPb;
     final String CURRENT_LIST_POSITION = "list_pos";
-    private AppDatabase mdb;
     private MovieItemAdapter mMovieItemAdapter;
     private MoviesViewModel mainViewModel;
 
@@ -59,7 +60,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mResultRv.setAdapter(mMovieItemAdapter);
         mainViewModel = ViewModelProviders.of(this).get(MoviesViewModel.class);
         showLoading();
-        mdb = AppDatabase.getInstance(this);
         if (sCurrentSortBy != NetworkUtils.FAVORITES)
            mainViewModel.loadMovies(sCurrentSortBy);
         else loadFavorites();
@@ -70,6 +70,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 showData();
             }
         });
+
     }
 
     @Override
@@ -128,33 +129,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         detailIntent.putExtra("movieItem", stringMovieObject);
         startActivity(detailIntent);
     }
+    void showEmpty(){
+        mErrorMsgTv.setVisibility(View.VISIBLE);
+        mErrorMsgTv.setText(getString(R.string.empty_message));
+        mResultRv.setVisibility(View.GONE);
+        mLoadingPb.setVisibility(View.GONE);
+        mRetryButton.setVisibility(View.VISIBLE);
+        mRetryButton.setText(getString(R.string.load_movies));
+        sCurrentSortBy=NetworkUtils.POPULAR_END_POINT;
 
-//    class GithubQueryTask extends AsyncTask<URL, Void, String> {
-//        @Override
-//        protected String doInBackground(URL... urls) {
-//            String githubSearchResults = null;
-//            try {
-//                githubSearchResults = NetworkUtils.getResponseFromHttpUrl(urls[0]);
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//            return githubSearchResults;
-//        }
-//
-//        @Override
-//        protected void onPostExecute(String s) {
-//            super.onPostExecute(s);
-//            Gson gson = new Gson();
-//            MoviesApiResponse apiResponse = gson.fromJson(s, MoviesApiResponse.class);
-//            if (apiResponse != null && apiResponse.getResults().size() > 0) {
-//                mMovieItemAdapter.setMovieItems(apiResponse.getResults());
-//                showData();
-//            } else {
-//                showError();
-//            }
-//        }
-//    }
-
+    }
     void showData() {
         mLoadingPb.setVisibility(View.GONE);
         mErrorMsgTv.setVisibility(View.GONE);
@@ -176,21 +160,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mRetryButton.setVisibility(View.GONE);
     }
 
-//    void loadData(int sortBy) {
-//        URL githubSearchUrl = null;
-//        if (sortBy == SORT_BY_POPULAR) {
-//            githubSearchUrl = NetworkUtils.buildUrl(POPULAR_END_POINT);
-//        } else {
-//            githubSearchUrl = NetworkUtils.buildUrl(TOP_RATED_END_POINT);
-//        }
-//        new GithubQueryTask().execute(githubSearchUrl);
-//    }
-
     void loadFavorites() {
         showData();
-        mMovieItemAdapter.setMovieItems(mdb.taskDAO().loadMovies());
+        mainViewModel.getFavorites().observe(this, new Observer<List<MovieEntry>>() {
+            @Override
+            public void onChanged( List<MovieEntry> movieEntries) {
+                if(movieEntries!=null&&movieEntries.size()>0) {
+                    mMovieItemAdapter.setMovieItems(movieEntries);
+                }else {
+                    showEmpty();
+                }
+            }
+        });
     }
-
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
